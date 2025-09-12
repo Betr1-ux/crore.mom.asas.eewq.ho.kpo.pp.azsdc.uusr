@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KING CRASH</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0d001a;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .card {
+    text-align: center;
+    background: #1a0033;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 0 20px rgba(255,102,204,0.4);
+    width: min(95vw, 500px);
+    position: relative;
+  }
+  h1 { color: #ff66cc; font-size: 26px; margin-bottom: 15px; }
+  .input {
+    width: 100%; height: 44px; border: none; border-radius: 10px;
+    margin: 6px 0; padding: 0 10px; text-align: center; font-size: 16px;
+  }
+  .error { display: none; color: #ff4b4b; font-weight: 700; margin: 6px 0; }
+  button {
+    padding: 12px 24px; border: none; border-radius: 10px;
+    background: #ff66cc; color: #fff; font-size: 16px;
+    cursor: pointer; font-weight: bold;
+  }
+  button:hover { opacity: .9; }
+
+  /* الدائرة */
+  .circle {
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #330066, #000);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 25px auto;
+    font-weight: bold;
+    font-size: 42px; /* كبرنا الحجم */
+    color: #ff66cc;
+    text-shadow: 0 0 10px #ff33cc;
+    box-shadow: 0 0 25px rgba(255,0,255,0.7);
+    animation: pulse 2s infinite alternate, glow 5s infinite linear;
+    padding: 20px;
+    text-align: center;
+  }
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 25px #ff00ff; }
+    25% { box-shadow: 0 0 25px #00ffff; }
+    50% { box-shadow: 0 0 25px #ffcc00; }
+    75% { box-shadow: 0 0 25px #00ff00; }
+    100% { box-shadow: 0 0 25px #ff00ff; }
+  }
+
+  .attempts {
+    margin: 10px 0;
+    color: #00ffff;
+    font-weight: bold;
+  }
+
+  /* زرار التليجرام */
+  .telegram-btn {
+    position: absolute;
+    bottom: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0088cc;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0,136,204,0.6);
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .telegram-btn:hover { background: #00aaff; }
+  .telegram-btn img {
+    width: 30px; height: 30px;
+  }
+</style>
+</head>
+<body>
+
+<!-- تسجيل الدخول -->
+<div id="loginBox" class="card">
+  <h1>تسجيل الدخول</h1>
+  <input id="userId" class="input" type="text" placeholder="ID" />
+  <input id="code" class="input" type="text" placeholder="Code" autocomplete="one-time-code" />
+  <div id="errorMsg" class="error">كود خطأ أو انتهى</div>
+  <button onclick="login()">تأكيد</button>
+
+  <!-- زر التليجرام -->
+  <a href="https://t.me/nbvvte" target="_blank" class="telegram-btn">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram"/>
+  </a>
+</div>
+
+<!-- واجهة اللعبة -->
+<div id="gameBox" class="card" style="display:none;">
+  <h1>KING CRASH</h1>
+  
+  <div class="circle">
+    <div id="circleText">0.00</div> <!-- تبدأ من 0.00 -->
+  </div>
+
+  <div class="attempts">المحاولات: <b id="attempts">0</b></div>
+  <button onclick="nextStep()">Next</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAF1K59iKFsVH-wyAKyGw2wsIMUIرT9WMg",
+    authDomain: "admin-3fd30.firebaseapp.com",
+    databaseURL: "https://admin-3fd30-default-rtdb.firebaseio.com",
+    projectId: "admin-3fd30",
+    storageBucket: "admin-3fd30.firebasestorage.app",
+    messagingSenderId: "981773176798",
+    appId: "1:981773176798:web:1ebc106e60af04ed8a174f",
+    measurementId: "G-35L6036ED8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let attempts = 0;
+  let currentCode = "";
+  let predictions = ["0.00","1.47", "3.38", "1.14", "24.05", "1.28", "16.82", "1.06"];
+  let currentIndex = 0;
+
+  window.login = async () => {
+    const userId = document.getElementById("userId").value.trim();
+    const codeInput = document.getElementById("code").value.trim();
+    const errorMsg = document.getElementById("errorMsg");
+
+    if (!userId || !codeInput) {
+      errorMsg.style.display = "block";
+      errorMsg.textContent = "ID ادخل الكود و";
+      return;
+    }
+
+    try {
+      const snap = await get(ref(db, "codes/" + codeInput));
+      if (!snap.exists()) throw new Error("invalid");
+
+      const data = snap.val();
+      if ((data.remaining ?? 0) <= 0) throw new Error("exhausted");
+
+      currentCode = codeInput;
+      attempts = data.remaining;
+      await update(ref(db, "codes/" + codeInput), { user: userId });
+
+      errorMsg.style.display = "none";
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("gameBox").style.display = "block";
+      updateAttemptsUI();
+      showPrediction();
+    } catch(e){
+      errorMsg.style.display = "block";
+      errorMsg.textContent = "كود خطأ أو انتهى";
+    }
+  };
+
+  function updateAttemptsUI(){
+    document.getElementById("attempts").textContent = attempts;
+  }
+
+  function logoutAuto(){
+    document.getElementById("gameBox").style.display = "none";
+    document.getElementById("loginBox").style.display = "block";
+    document.getElementById("userId").value = "";
+    document.getElementById("code").value = "";
+    document.getElementById("circleText").textContent = "0.00";
+    currentCode = "";
+    currentIndex = 0;
+  }
+
+  async function deductAttempt(){
+    if (attempts <= 0) {
+      logoutAuto();
+      return;
+    }
+    attempts--;
+    updateAttemptsUI();
+    await update(ref(db, "codes/" + currentCode), { remaining: attempts });
+
+    if (attempts <= 0) {
+      setTimeout(()=> logoutAuto(), 1000);
+    }
+  }
+
+  function showPrediction(){
+    if (currentIndex < predictions.length) {
+      document.getElementById("circleText").textContent = predictions[currentIndex];
+    } else {
+      document.getElementById("circleText").textContent = "انتهت التوقعات";
+    }
+  }
+
+  window.nextStep = () => {
+    if (currentIndex < predictions.length) {
+      showPrediction();
+      currentIndex++;
+    }
+    deductAttempt();
+  };
+</script>
+</body>
+</html>
