@@ -37,7 +37,6 @@
   }
   button:hover { opacity: .9; }
 
-  /* الدائرة */
   .circle {
     width: 280px; height: 280px;
     border-radius: 50%;
@@ -45,7 +44,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     margin: 25px auto;
     font-weight: bold;
-    font-size: 42px; /* كبرنا الحجم */
+    font-size: 42px;
     color: #ff66cc;
     text-shadow: 0 0 10px #ff33cc;
     box-shadow: 0 0 25px rgba(255,0,255,0.7);
@@ -71,7 +70,6 @@
     font-weight: bold;
   }
 
-  /* زرار التليجرام */
   .telegram-btn {
     position: absolute;
     bottom: -70px;
@@ -104,7 +102,6 @@
   <div id="errorMsg" class="error">كود خطأ أو انتهى</div>
   <button onclick="login()">تأكيد</button>
 
-  <!-- زر التليجرام -->
   <a href="https://t.me/nbvvte" target="_blank" class="telegram-btn">
     <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram"/>
   </a>
@@ -115,7 +112,7 @@
   <h1>KING CRASH</h1>
   
   <div class="circle">
-    <div id="circleText">0.00</div> <!-- تبدأ من 0.00 -->
+    <div id="circleText">0.00</div>
   </div>
 
   <div class="attempts">المحاولات: <b id="attempts">0</b></div>
@@ -123,26 +120,32 @@
 </div>
 
 <script type="module">
+  // Firebase (modular v9) imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  // (optional) analytics if you need it
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
 
+  // ====== هنا حطيت إعدادات الفايربيس اللي بعتها ======
   const firebaseConfig = {
-    apiKey: "AIzaSyAF1K59iKFsVH-wyAKyGw2wsIMUIرT9WMg",
-    authDomain: "admin-3fd30.firebaseapp.com",
-    databaseURL: "https://admin-3fd30-default-rtdb.firebaseio.com",
-    projectId: "admin-3fd30",
-    storageBucket: "admin-3fd30.firebasestorage.app",
-    messagingSenderId: "981773176798",
-    appId: "1:981773176798:web:1ebc106e60af04ed8a174f",
-    measurementId: "G-35L6036ED8"
+    apiKey: "AIzaSyDW4dAASi236YpSrebx7NkMBBNe6_rp5OI",
+    authDomain: "gooa-6c940.firebaseapp.com",
+    databaseURL: "https://gooa-6c940-default-rtdb.firebaseio.com",
+    projectId: "gooa-6c940",
+    storageBucket: "gooa-6c940.firebasestorage.app",
+    messagingSenderId: "844888715239",
+    appId: "1:844888715239:web:936dd5fdac8b46e0479742",
+    measurementId: "G-66CL69F082"
   };
 
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
+  try { getAnalytics(app); } catch(e){ /* analytics may fail on some hosts */ }
   const db = getDatabase(app);
 
   let attempts = 0;
   let currentCode = "";
-  let predictions = ["1.29","1.28", "2.87", "3.51", "1.56", "1.56", "1.06", "1.09"];
+  let predictions = ["0.00","1.69", "2.37", "24.61", "3.00", "1.15", "1.89", "2.20"];
   let currentIndex = 0;
 
   window.login = async () => {
@@ -152,7 +155,7 @@
 
     if (!userId || !codeInput) {
       errorMsg.style.display = "block";
-      errorMsg.textContent = "ID ادخل الكود و";
+      errorMsg.textContent = "ادخل ID و الكود";
       return;
     }
 
@@ -182,6 +185,14 @@
     document.getElementById("attempts").textContent = attempts;
   }
 
+  async function deductAttempt(){
+    if (attempts <= 0) return logoutAuto();
+    attempts--;
+    updateAttemptsUI();
+    await update(ref(db, "codes/" + currentCode), { remaining: attempts });
+    if (attempts <= 0) setTimeout(logoutAuto, 1000);
+  }
+
   function logoutAuto(){
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("loginBox").style.display = "block";
@@ -190,20 +201,6 @@
     document.getElementById("circleText").textContent = "0.00";
     currentCode = "";
     currentIndex = 0;
-  }
-
-  async function deductAttempt(){
-    if (attempts <= 0) {
-      logoutAuto();
-      return;
-    }
-    attempts--;
-    updateAttemptsUI();
-    await update(ref(db, "codes/" + currentCode), { remaining: attempts });
-
-    if (attempts <= 0) {
-      setTimeout(()=> logoutAuto(), 1000);
-    }
   }
 
   function showPrediction(){
@@ -223,4 +220,4 @@
   };
 </script>
 </body>
-  </html>
+</html>
